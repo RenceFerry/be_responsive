@@ -3,6 +3,7 @@ import React from 'react'
 import { Mobile, Tablet, Desktop, Laptop, Btn, Range, Screens } from "../constants/Svg.tsx"
 import { smartphone, tablet, laptop, desktop } from '../constants/ScreenSizes.ts'
 import Dropdown from './Dropdown.tsx'
+import { Plus, Minus } from "lucide-react"
 //import { Button } from "@/components/ui/button"
 
 
@@ -13,13 +14,20 @@ const Adjuster: React.FC<{ theme: any, setDimen: any, setScale: any, dimen: any 
   const [showAd, setShowAd] = useState(true)
   const [fixedDimen, setFixedDimen] = useState([[360,800],[768,1024],[1366,768],[1920,1080]])
   const [activeDevice, setActiveDevice] = useState('')
-  let screenHei = window.screen.height - window.screen.height*0.5
+  const screenDimen = [window.screen.width, window.screen.height]
   const hInput = useRef<HTMLInputElement>(null)
   const wInput = useRef<HTMLInputElement>(null)
   const [scaleInput, setScaleInput] = useState(100)
+  const [maxW, setMaxW] = useState(2000)
+  const [maxH, setMaxH] = useState(window.screen.height)
   
-  const setNewDimen = (w: any,h: any) => {
+  const setNewDimen = (w: any,h: any, widthScale) => {
     if(showAd2){
+      if (w>maxW){
+        setMaxW(w)
+      } else if(w<2000){
+        setMaxW(2000)
+      }
       let range = Math.abs(dimen[0] - w)
       let multi = range > 2000 ? 50 : range > 1000 ? 30 : 10 
       let dimenWid = Math.floor(dimen[0]/multi)
@@ -40,8 +48,12 @@ const Adjuster: React.FC<{ theme: any, setDimen: any, setScale: any, dimen: any 
         }
       }, 10)
     }else{
-      let newW = wInput.current.value / 100 * 3000 + 320;
-      let newH = hInput.current.value/100*screenHei + 320
+      let newW = wInput.current.value / 100 * maxW + 320;
+      setMaxH(newW*screenDimen[1]/screenDimen[0])
+      let newH = !widthScale ? 
+      dimen[1]*newW/dimen[0] < 320 ? 320 : hInput.current.value / 100 * maxH + 320
+      : dimen[1]*newW/dimen[0]<320 ? 320 
+      : dimen[1]*newW/dimen[0]
       setDimen([Math.floor(newW), Math.floor(newH), false])
       setScale(screenWid/newW)
     }
@@ -62,19 +74,44 @@ const Adjuster: React.FC<{ theme: any, setDimen: any, setScale: any, dimen: any 
       </div>
       <div className="flex flex-row w-full h-full items-center mt-[-56px]">
         <div className={`${showAd2 ? 'hidden' : 'flex'} h-full justify-center flex-col flex-1 mx-8 ml-4`}>
-          <div className="flex mb-6">
+          <div className="flex flex-col">
             <h3 className="font-bold w-10 text-color1 mr-4">Width:</h3>
-            <input ref={wInput} onChange={()=>{
-              setNewDimen(0,0)
-              setActiveDevice('')
-            }}  type="range" className='w-full flex-1'/>
+            <div className="flex flex-row">
+              <Minus className='text-black bg-color2 border-[1px] border-color1 rounded mr-3' onClick={()=>{
+                const newDimen = [dimen[0]-1, Math.floor(dimen[1]*(dimen[0]-1)/dimen[0])]
+                setDimen(newDimen)
+                setScale(screenWid/newDimen[0])
+              }}/>
+              <input ref={wInput} onChange={()=>{
+                setNewDimen(0,0, true)
+                setActiveDevice('')
+              }} value={
+                (dimen[0]-320)/maxW*100
+              }  type="range" className='w-full flex-1'/>
+              <Plus className='text-black bg-color2 border-[1px] border-color1 rounded ml-3' onClick={()=>{
+                const newDimen = [dimen[0]+1, Math.floor(dimen[1]*(dimen[0]+1)/dimen[0])]
+                setDimen(newDimen)
+                setScale(screenWid/newDimen[0])
+              }}/>
+            </div>
           </div>
-          <div className="flex">
+          <div className="flex flex-col">
             <h3 className="font-bold w-10 text-color1 mr-4">Height:</h3>
-            <input ref={hInput} onChange={()=>{
-              setNewDimen(0,0)
-              setActiveDevice('')
-            }} type="range" className='w-full flex-1'/>
+            <div className="flex">
+              <Minus className='text-black bg-color2 border-[1px] border-color1 rounded mr-3' onClick={()=>{
+                const newHei = dimen[1]-1
+                setDimen([dimen[0], newHei])
+              }}/>
+              <input ref={hInput} onChange={()=>{
+                setNewDimen(0,0)
+                setActiveDevice('')
+              }} value={
+                (dimen[1]-320)/maxH*100
+              } type="range" className='w-full flex-1'/>
+              <Plus className='text-black bg-color2 border-[1px] border-color1 rounded ml-3' onClick={()=>{
+                const newHei = dimen[1]+1
+                setDimen([dimen[0], newHei])}}/>
+            </div>
           </div>
         </div>
         <div className={`${showAd2 ? 'flex' : 'hidden'} flex-col flex-1`}>
